@@ -1,5 +1,5 @@
 # SimpleColumnStoredDB
-A simple column-store data processing which has below features:
+A simple column-store data processing which has below features.
 1. Architecture:
 - ColumnBase: base class for all columns.
 + Enums:
