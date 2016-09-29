@@ -119,10 +119,10 @@ int main(void) {
 	cout << col1->getName() << " number of distinct values = " << colDict1->size() << endl;
 	cout << col2->getName() << " number of distinct values = " << colDict2->size() << endl;
 	cout << col3->getName() << " number of distinct values = " << colDict3->size() << endl;
-	//col1->updateEncodedVecValue(colValue1, colDict1->size());
-	//col2->updateEncodedVecValue(colValue2, colDict2->size());
-	//col3->updateEncodedVecValue(colValue3, colDict3->size());
-	//col3->printEncodedVecValue(100);
+	col1->updateEncodedVecValue(colValue1, colDict1->size());
+	col2->updateEncodedVecValue(colValue2, colDict2->size());
+	col3->updateEncodedVecValue(colValue3, colDict3->size());
+	//col2->printEncodedVecValue(10);
 
 	// init Table
 	vector<ColumnBase*> columns;
@@ -250,9 +250,9 @@ int main(void) {
 
 					// find rowId with appropriate encodeValue
 					vector<size_t>* new_q_resultJoin = new vector<size_t>();
-					for (size_t rowId = 0; !result.empty() && rowId < t->getVecValue()->size(); rowId++) {
+					for (size_t rowId = 0; !result.empty() && rowId < t->getEncodedVecValue()->size(); rowId++) {
 						// convert from bitset to encodeValue
-						size_t encodeValue = (t->getVecValue()->at(rowId));
+						size_t encodeValue = (t->getEncodedVecValue()->at(rowId)).to_ulong();
 						if (encodeValue >= result.front() && encodeValue <= result.back()) {
 							// first where expr
 							if (fidx == 0)
@@ -293,7 +293,7 @@ int main(void) {
 						for (size_t i = 0; i < q_resultJoin->size() && i < limit; i++) {
 							size_t rid = q_resultJoin->at(i);
 							// convert from bitset to encode value
-							size_t encodeValue = (t->getVecValue()->at(rid));
+							size_t encodeValue = (t->getEncodedVecValue()->at(rid)).to_ulong();
 							int* a = t->getDictionary()->lookup(encodeValue);
 							outputs[i+1] += to_string(*a) + ", ";
 						}
@@ -303,7 +303,7 @@ int main(void) {
 						for (size_t i = 0; i < q_resultJoin->size() && i < limit; i++) {
 							size_t rid = q_resultJoin->at(i);
 							// convert from bitset to encode value
-							size_t encodeValue = (t->getVecValue()->at(rid));
+							size_t encodeValue = (t->getEncodedVecValue()->at(rid)).to_ulong();
 							string* a = t->getDictionary()->lookup(encodeValue);
 							outputs[i+1] += *a + ", ";
 						}
