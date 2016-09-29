@@ -30,7 +30,7 @@ class TestCPP {
 };
 
 int main(void) {
-	puts("Hello World!!!");
+	puts("***** Simple Column-Store Database start ******");
 
 	// Column 0
 	Column<int>* col0 = new Column<int>();
@@ -64,19 +64,20 @@ int main(void) {
 	Dictionary<string>* colDict3 = col3->getDictionary();
 	vector<size_t>* colValue3 = col3->getVecValue();
 
-	//get the starting value of clock
-	//clock_t start = clock();
-	// display current time
-	time_t t = time(NULL);
-	cout << "Now is " << ctime(&t) << endl;
+	// calculate time execution
+	clock_t begin_time = clock();
 
 	// read file
-	//cout << "Enter file path: ";
+	cout << "Enter file path: ";
 	string filePath;
-	//cin >> filePath;
-	//ifstream infile(filePath);
+	getline(cin, filePath);
+	ifstream infile(filePath);
 	//ifstream infile("/home/duclv/Downloads/data1M.csv");
-	ifstream infile("/home/duclv/homework/data.csv");
+	//ifstream infile("/home/duclv/homework/data.csv");
+	if (!infile) {
+		cout << "Cannot open file path: " << filePath << endl;
+		return -1;
+	}
 	string line;
 	string delim = ",";
 	size_t pos = 0;
@@ -132,23 +133,23 @@ int main(void) {
 	Table* table = new Table(columns);
 	table->setName("orders");
 
+	// loaded time
+	std::cout << "Table Load time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
+
 	// print result
 	//colDict2->print(100);
 	//col3->printVecValue(100);
 	//colDict3->print(100);
 
-	// display current time
-	t = time(NULL);
-	cout << "Now is " << ctime(&t) << endl;
-
 	// query
 	while (true) {
 		string query = "";
-		cout << "Enter a query: ";
+		cout << "Enter a query (enter 'quit' to quit): ";
 		getline(cin, query);
 		if ("quit" == query)
 			break;
 
+		begin_time = clock();
 		// parse a given query
 		hsql::SQLParserResult* pResult = hsql::SQLParser::parseSQLString(query);
 		// check whether the parsing was successfull
@@ -171,6 +172,7 @@ int main(void) {
 
 				for (hsql::Expr* expr : *select->selectList) {
 					if (expr->type == hsql::ExprType::kExprStar) {
+						q_select_fields.push_back("o_orderkey");
 						q_select_fields.push_back("o_orderstatus");
 						q_select_fields.push_back("o_totalprice");
 						q_select_fields.push_back("o_comment");
@@ -269,6 +271,7 @@ int main(void) {
 					}
 				}
 				// print result
+				cout << "*** Query result ***" << endl;
 				size_t limit = 10;
 				vector<string> outputs (limit + 1);
 				for (size_t idx = 0; idx < q_select_fields.size(); idx++) {
@@ -277,14 +280,21 @@ int main(void) {
 					ColumnBase* colBase = (ColumnBase*) table->getColumnByName(select_field_name);
 					if (colBase == NULL)
 						continue;
-					if (colBase->getType() == ColumnBase::intType) {
+					if (select_field_name == "o_orderkey") {
+						Column<int>* t = (Column<int>*) colBase;
+						for (size_t i = 0; i < q_resultJoin->size() && i < limit; i++) {
+							size_t rid = q_resultJoin->at(i);
+							size_t a = t->getVecValue()->at(rid);
+							outputs[i+1] += to_string(a) + ", ";
+						}
+					}
+					else if (colBase->getType() == ColumnBase::intType) {
 						Column<int>* t = (Column<int>*) colBase;
 						for (size_t i = 0; i < q_resultJoin->size() && i < limit; i++) {
 							size_t rid = q_resultJoin->at(i);
 							// convert from bitset to encode value
 							size_t encodeValue = (t->getVecValue()->at(rid));
 							int* a = t->getDictionary()->lookup(encodeValue);
-							//cout << select_field_name << "[" << i << "] = " << *a << endl;
 							outputs[i+1] += to_string(*a) + ", ";
 						}
 					}
@@ -295,7 +305,6 @@ int main(void) {
 							// convert from bitset to encode value
 							size_t encodeValue = (t->getVecValue()->at(rid));
 							string* a = t->getDictionary()->lookup(encodeValue);
-							//cout << select_field_name << "[" << i << "] = " << *a << endl;
 							outputs[i+1] += *a + ", ";
 						}
 					}
@@ -304,6 +313,8 @@ int main(void) {
 					cout << output << endl;
 				}
 				cout << "Showing only "<<limit<<" result !" << endl;
+				// query time
+				std::cout << "Table Selection time: " << float(clock() - begin_time)/CLOCKS_PER_SEC << " seconds " << endl;
 				// Processe done !
 				break;
 			}
@@ -314,10 +325,6 @@ int main(void) {
 			printf("The SQL query is invalid or not supported !!!\n");
 		}
 	}
-
-	string input;
-	cout << "Enter anything to quit: ";
-	getline(cin, input);
 
 	return EXIT_SUCCESS;
 }
