@@ -1,6 +1,17 @@
 # SimpleColumnStoredDB
-A simple column-store data processing which has below features.
-1. Architecture:
+A simple column-store data processing.
+--------------------
+How to build and run
+--------------------
+- Build: 
+  $ make clean
+  $ make
+- Run:
+  $ ./App
+
+------------
+Architecture
+------------
 - ColumnBase: base class for all columns.
 + Enums:
   + COLUMN_TYPE: column types: intType, charType, varcharType.
@@ -34,7 +45,10 @@ A simple column-store data processing which has below features.
   + name: table name
 + Functions:
   + getColumnByName(tableName): return the pointer to the column which has name equals to tableName.
-2. Processing:
+
+-----------
+Processing
+-----------
 - Load data into memory:
   + Read data from local file.
   + With each line, split by delimeter, get tokens.
