@@ -23,7 +23,7 @@ public:
 
 	T* lookup(size_t index);
 	void search(T& value, ColumnBase::OP_TYPE opType, vector<size_t>& result);
-	size_t addNewElement(T& value, vector<size_t>& vecValue);
+	size_t addNewElement(T& value, vector<size_t>* vecValue);
 	size_t size();
 	void print(int row);
 };

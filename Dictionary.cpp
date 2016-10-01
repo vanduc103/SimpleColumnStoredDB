@@ -134,10 +134,10 @@ void Dictionary<T>::search(T& value, ColumnBase::OP_TYPE opType, vector<size_t>&
 }
 
 template<class T>
-size_t Dictionary<T>::addNewElement(T& value, vector<size_t>& vecValue) {
+size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue) {
 	if (items->empty()) {
 		items->push_back(value);
-		vecValue.push_back(0);
+		vecValue->push_back(0);
 		return 0;
 	} else {
 		// find the lower bound for value in vector
@@ -149,7 +149,7 @@ size_t Dictionary<T>::addNewElement(T& value, vector<size_t>& vecValue) {
 		if (lower != items->end() && equalFunc(value, *lower)) {
 			// return the position of lower
 			long elementPos = lower - items->begin();
-			vecValue.push_back(elementPos);
+			vecValue->push_back(elementPos);
 			return elementPos;
 		} else {
 			// The position of new element in dictionary
@@ -158,18 +158,18 @@ size_t Dictionary<T>::addNewElement(T& value, vector<size_t>& vecValue) {
 				// insert to the end of dictionary
 				newElementPos = items->size();
 				items->push_back(value);
-				vecValue.push_back(newElementPos);
+				vecValue->push_back(newElementPos);
 			} else {
 				newElementPos = lower - items->begin();
 				// insert into dictionary
 				items->insert(lower, value);
 				// update (+1) to all elements in vecValue have value >= newElementPos
-				for (int i = 0; i < vecValue.size(); i++) {
-					if (vecValue[i] >= newElementPos) {
-						++vecValue[i];
+				for (int i = 0; i < vecValue->size(); i++) {
+					if (vecValue->at(i) >= newElementPos) {
+						++vecValue->at(i);
 					}
 				}
-				vecValue.push_back(newElementPos);
+				vecValue->push_back(newElementPos);
 			}
 
 			// return the position of new element
