@@ -87,7 +87,7 @@ public:
 	}
 
 	void updateVecValue(T& value) {
-		// used for column has few distinct values
+		// used for column has few repeating values
 		vecValue->push_back(value);
 	}
 
@@ -119,9 +119,15 @@ public:
 	}
 
 	// Update new value for dictionary
-	void updateDictionary(T& value) {
-		dictionary->addNewElement(value, vecValue);
+	void updateDictionary(T& value, bool sorted = true) {
+		dictionary->addNewElement(value, vecValue, sorted);
 	}
+
+	void sortDictionary() {
+		vecValue->resize(0);
+		dictionary->sortDictionary(vecValue);
+	}
+
 };
 
 } /* namespace std */

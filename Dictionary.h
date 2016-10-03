@@ -9,6 +9,7 @@
 
 #include "ColumnBase.h"
 #include <vector>
+#include <set>
 #include <algorithm>
 
 using namespace std;
@@ -17,15 +18,17 @@ template<class T>
 class Dictionary {
 private:
 	vector<T>* items;
+	set<T>* sItems;
 public:
 	Dictionary();
 	virtual ~Dictionary();
 
 	T* lookup(size_t index);
 	void search(T& value, ColumnBase::OP_TYPE opType, vector<size_t>& result);
-	size_t addNewElement(T& value, vector<size_t>* vecValue);
+	size_t addNewElement(T& value, vector<size_t>* vecValue, bool sorted);
 	size_t size();
 	void print(int row);
+	void sortDictionary(vector<size_t>* vecValue);
 };
 
 

@@ -86,6 +86,7 @@ int main(void) {
 		cout << "Cannot open file path: " << filePath << endl;
 		return -1;
 	}
+	size_t row = 0;
 	string line;
 	string delim = ",";
 	while(getline(infile, line)) {
@@ -100,18 +101,17 @@ int main(void) {
 		    // key is 1st column
 		    if (i == 1) {
 		    	int key = stoi(token);
-				// no encode by dictionary
-				col0->updateVecValue(key);
+				col0->updateDictionary(key, false);
 		    }
 		    // status is 2nd column
 		    else if (i == 2) {
 				boost::replace_all(token, "\"", "");
-		    	col1->updateDictionary(token);
+		    	col1->updateDictionary(token, false);
 		    }
 		    // totalprice is 3rd column
 		    else if (i == 3) {
 		    	int totalprice = stoi(token);
-		    	col2->updateDictionary(totalprice);
+		    	col2->updateDictionary(totalprice, false);
 		    }
 		    // comment is from 4th column
 			if (i >= 4) comment += token + delim;
@@ -120,14 +120,21 @@ int main(void) {
 		token = line.substr(last);
 		comment += token;
 		boost::replace_all(comment, "\"", "");
-		col3->updateDictionary(comment);
+		boost::trim(comment);
+		col3->updateDictionary(comment, false);
+		++row;
 	}
 	infile.close();
+	cout << "Done load data !" << endl;
+	// sort dictionary
+	col1->sortDictionary();
+	col2->sortDictionary();
+	col3->sortDictionary();
+
 	// print distinct values
-	cout << col0->getName() << " number of distinct values = " << col0->getDictionary()->size() << endl;
-	cout << col1->getName() << " number of distinct values = " << col1->getDictionary()->size() << endl;
-	cout << col2->getName() << " number of distinct values = " << col2->getDictionary()->size() << endl;
-	cout << col3->getName() << " number of distinct values = " << col3->getDictionary()->size() << endl;
+	cout << col1->getName() << " #distinct values = " << col1->getDictionary()->size()<<"/"<<row << endl;
+	cout << col2->getName() << " #distinct values = " << col2->getDictionary()->size()<<"/"<<row << endl;
+	cout << col3->getName() << " #distinct values = " << col3->getDictionary()->size()<<"/"<<row << endl;
 	// bit packing
 	col1->bitPackingVecValue();
 	col2->bitPackingVecValue();
@@ -147,7 +154,7 @@ int main(void) {
 
 	// print result
 	col3->getDictionary()->print(20);
-	//colDict2->print(100);
+	col3->printVecValue(10);
 
 	// query
 	while (true) {
@@ -361,7 +368,7 @@ int main(void) {
 					if (colBase == NULL)
 						continue;
 					limitCount = 0;
-					if (select_field_name == "o_orderkey") {
+					/*if (select_field_name == "o_orderkey") {
 						Column<int>* t = (Column<int>*) colBase;
 						for (size_t rid = 0; rid < q_resultRid->size(); rid++) {
 							if (q_resultRid->at(rid)) {
@@ -370,8 +377,8 @@ int main(void) {
 								if (++limitCount >= limit) break;
 							}
 						}
-					}
-					else if (colBase->getType() == ColumnBase::intType) {
+					}*/
+					if (colBase->getType() == ColumnBase::intType) {
 						Column<int>* t = (Column<int>*) colBase;
 						for (size_t rid = 0; rid < q_resultRid->size(); rid++) {
 							//size_t rid = i;

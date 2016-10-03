@@ -18,6 +18,7 @@ using namespace std;
 template<class T>
 Dictionary<T>::Dictionary() {
 	items = new vector<T>();
+	sItems = new set<T>();
 }
 
 template<class T>
@@ -31,7 +32,6 @@ T* Dictionary<T>::lookup(size_t index) {
 
 template<class T>
 bool compFunc(T value1, T value2) {
-	//cout << "compare " << value1 << " , " << value2 << ". result: " << (value1 < value2) << "\n";
 	return value1 < value2;
 }
 
@@ -134,17 +134,20 @@ void Dictionary<T>::search(T& value, ColumnBase::OP_TYPE opType, vector<size_t>&
 }
 
 template<class T>
-size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue) {
+size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue, bool sorted) {
 	if (items->empty()) {
 		items->push_back(value);
 		vecValue->push_back(0);
 		return 0;
+	} else if (!sorted) {
+		items->push_back(value);
+		vecValue->push_back(items->size() - 1);
+		return vecValue->back();
 	} else {
 		// find the lower bound for value in vector
 		typename vector<T>::iterator lower;
 		lower = std::lower_bound(items->begin(), items->end(), value,
 				compFunc<T>);
-		//cout << "compFunc(" << value <<", " << *lower <<") is "<< compFunc(value, *lower) <<"\n";
 		// value existed
 		if (lower != items->end() && equalFunc(value, *lower)) {
 			// return the position of lower
@@ -179,14 +182,22 @@ size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue) {
 }
 
 template<class T>
+void Dictionary<T>::sortDictionary(vector<size_t>* vecValue) {
+	for (int i = 0; i < items->size(); i++) {
+		sItems->insert(items->at(i));
+	}
+}
+
+template<class T>
 size_t Dictionary<T>::size() {
-	return items->size();
+	//return items->size();
+	return sItems->size();
 }
 
 template<class T>
 void Dictionary<T>::print(int row) {
-	for (int i = 0; i < items->size() && i < row; i++) {
-		cout << "Dictionary[" << i << "] = " << items->at(i) << "\n";
+	for (int i = 0; i < sItems->size() && i < row; i++) {
+		cout << "Dictionary[" << i << "] = " << sItems->at(i) << "\n";
 	}
 }
 
