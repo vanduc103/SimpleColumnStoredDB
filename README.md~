@@ -4,6 +4,7 @@ A simple column-store data processing.
 How to build and run
 --------------------
 - Prepare to build:
+  + gcc 4.8+
   + Install boost library:
     + Download boost_1_61_0.tar.bz2: http://www.boost.org/users/history/version_1_61_0.html
     + Extract (or copy) boost folder to /usr/local/: tar --bzip2 -xf /path/to/boost_1_61_0.tar.bz2

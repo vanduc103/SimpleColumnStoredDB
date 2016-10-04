@@ -9,7 +9,7 @@
 
 #include "ColumnBase.h"
 #include <vector>
-#include <set>
+#include <map>
 #include <algorithm>
 
 using namespace std;
@@ -17,8 +17,13 @@ using namespace std;
 template<class T>
 class Dictionary {
 private:
+	struct classcomp {
+	  bool operator() (const T lhs, const T rhs) const
+	  {return lhs<rhs;}
+	};
+
 	vector<T>* items;
-	set<T>* sItems;
+	std::map<T, size_t, classcomp> sMap;
 public:
 	Dictionary();
 	virtual ~Dictionary();
@@ -28,7 +33,7 @@ public:
 	size_t addNewElement(T& value, vector<size_t>* vecValue, bool sorted);
 	size_t size();
 	void print(int row);
-	void sortDictionary(vector<size_t>* vecValue);
+
 };
 
 

@@ -11,14 +11,25 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
+#include <map>
 #include "Dictionary.h"
 
 using namespace std;
 
 template<class T>
+bool compFunc(T value1, T value2) {
+	return value1 < value2;
+};
+
+template<class T>
+bool equalFunc(T value1, T value2) {
+	return value1 == value2;
+};
+
+template<class T>
 Dictionary<T>::Dictionary() {
 	items = new vector<T>();
-	sItems = new set<T>();
+	std::map<T, size_t, classcomp> sMap;
 }
 
 template<class T>
@@ -28,16 +39,6 @@ T* Dictionary<T>::lookup(size_t index) {
 	} else {
 		return &items->at(index);
 	}
-}
-
-template<class T>
-bool compFunc(T value1, T value2) {
-	return value1 < value2;
-}
-
-template<class T>
-bool equalFunc(T value1, T value2) {
-	return value1 == value2;
 }
 
 template<class T>
@@ -138,10 +139,18 @@ size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue, bool sor
 	if (items->empty()) {
 		items->push_back(value);
 		vecValue->push_back(0);
+		sMap[value] = 1;
 		return 0;
 	} else if (!sorted) {
-		items->push_back(value);
-		vecValue->push_back(items->size() - 1);
+		// check if value existed on dictionary
+		if (sMap[value] == 0) {
+			items->push_back(value);
+			vecValue->push_back(items->size() - 1);
+			sMap[value] = vecValue->back() + 1;
+		}
+		else {
+			vecValue->push_back(sMap[value] - 1);
+		}
 		return vecValue->back();
 	} else {
 		// find the lower bound for value in vector
@@ -181,23 +190,16 @@ size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue, bool sor
 	}
 }
 
-template<class T>
-void Dictionary<T>::sortDictionary(vector<size_t>* vecValue) {
-	for (int i = 0; i < items->size(); i++) {
-		sItems->insert(items->at(i));
-	}
-}
 
 template<class T>
 size_t Dictionary<T>::size() {
-	//return items->size();
-	return sItems->size();
+	return items->size();
 }
 
 template<class T>
 void Dictionary<T>::print(int row) {
-	for (int i = 0; i < sItems->size() && i < row; i++) {
-		cout << "Dictionary[" << i << "] = " << sItems->at(i) << "\n";
+	for (int i = 0; i < items->size() && i < row; i++) {
+		cout << "Dictionary[" << i << "] = " << items->at(i) << "\n";
 	}
 }
 

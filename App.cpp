@@ -1,9 +1,9 @@
 //============================================================================
-// Name        : TestCpp.cpp
+// Name        : App.cpp
 // Author      : Le Van Duc
 // Version     :
 // Copyright   : 
-// Description : Hello World in C, Ansi-style
+// Description : Main program to run functions of simple column-stored DB
 //============================================================================
 
 #include <stdio.h>
@@ -27,7 +27,7 @@
 
 using namespace std;
 
-// print operator type value
+// print operator type string value
 std::ostream& operator<<(std::ostream& out, const ColumnBase::OP_TYPE value){
     const char* s = 0;
 #define PROCESS_VAL(p, str) case(p): s = str; break;
@@ -80,12 +80,11 @@ int main(void) {
 	string filePath;
 	getline(cin, filePath);
 	ifstream infile(filePath);
-	//ifstream infile("/home/duclv/Downloads/data1M.csv");
-	//ifstream infile("/home/duclv/homework/data.csv");
 	if (!infile) {
 		cout << "Cannot open file path: " << filePath << endl;
 		return -1;
 	}
+	// process file
 	size_t row = 0;
 	string line;
 	string delim = ",";
@@ -94,6 +93,7 @@ int main(void) {
 		char i = 0;
 		string comment;
 		string token;
+		// read each token and add into column store
 		while ((next = line.find(delim, last)) != string::npos) {
 			token = line.substr(last, next - last);
 			last = next + delim.length();
@@ -106,12 +106,12 @@ int main(void) {
 		    // status is 2nd column
 		    else if (i == 2) {
 				boost::replace_all(token, "\"", "");
-		    	col1->updateDictionary(token, false);
+		    	col1->updateDictionary(token, true);
 		    }
 		    // totalprice is 3rd column
 		    else if (i == 3) {
 		    	int totalprice = stoi(token);
-		    	col2->updateDictionary(totalprice, false);
+		    	col2->updateDictionary(totalprice, true);
 		    }
 		    // comment is from 4th column
 			if (i >= 4) comment += token + delim;
@@ -125,17 +125,13 @@ int main(void) {
 		++row;
 	}
 	infile.close();
-	cout << "Done load data !" << endl;
-	// sort dictionary
-	col1->sortDictionary();
-	col2->sortDictionary();
-	col3->sortDictionary();
 
 	// print distinct values
 	cout << col1->getName() << " #distinct values = " << col1->getDictionary()->size()<<"/"<<row << endl;
 	cout << col2->getName() << " #distinct values = " << col2->getDictionary()->size()<<"/"<<row << endl;
 	cout << col3->getName() << " #distinct values = " << col3->getDictionary()->size()<<"/"<<row << endl;
 	// bit packing
+	col0->bitPackingVecValue();
 	col1->bitPackingVecValue();
 	col2->bitPackingVecValue();
 	col3->bitPackingVecValue();
@@ -152,9 +148,9 @@ int main(void) {
 	// loaded time
 	std::cout << "Table Load time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 
-	// print result
-	col3->getDictionary()->print(20);
-	col3->printVecValue(10);
+	// print result for testing
+	//col3->getDictionary()->print(10);
+	//col3->printVecValue(10);
 
 	// query
 	while (true) {
@@ -268,8 +264,11 @@ int main(void) {
 						cout << "value values[" << i << "] = " << q_where_values[i] << endl;
 					}
 				}
-				// execute query
-				vector<bool>* q_resultRid = new vector<bool>(); // contain query result row id
+				/*
+				 * execute query
+				 */
+				// this vector contain query result: row id = true, otherwise row id = false
+				vector<bool>* q_resultRid = new vector<bool>();
 				vector<vector<size_t>> q_results;
 				for (size_t fidx = 0; fidx < q_where_fields.size(); fidx++) {
 					string q_where_field = q_where_fields[fidx];
@@ -299,7 +298,7 @@ int main(void) {
 								if (encodeValue >= result.front() && encodeValue <= result.back()) {
 									// first where expr
 									if (fidx == 0)
-										q_resultRid->push_back(1); //rowId is in query result
+										q_resultRid->push_back(1); //rowId is in query result. set to true
 									else {
 										// only keep rid that existed on previous rid vector
 										if (q_resultRid->at(rowId)) {
@@ -308,7 +307,7 @@ int main(void) {
 									}
 								}
 								else {
-									// rowId is not in query result
+									// rowId is not in query result, set to false
 									if(fidx == 0)
 										q_resultRid->push_back(0);
 									else
@@ -358,7 +357,7 @@ int main(void) {
 				}
 				// print result
 				cout << "*** Query result ***" << endl;
-				size_t limit = 10;
+				size_t limit = 10; // the limit result to print
 				size_t limitCount = 0;
 				vector<string> outputs (limit + 1);
 				for (size_t idx = 0; idx < q_select_fields.size(); idx++) {
@@ -368,20 +367,9 @@ int main(void) {
 					if (colBase == NULL)
 						continue;
 					limitCount = 0;
-					/*if (select_field_name == "o_orderkey") {
-						Column<int>* t = (Column<int>*) colBase;
-						for (size_t rid = 0; rid < q_resultRid->size(); rid++) {
-							if (q_resultRid->at(rid)) {
-								size_t a = t->getVecValue()->at(rid);
-								outputs[limitCount+1] += to_string(a) + ", ";
-								if (++limitCount >= limit) break;
-							}
-						}
-					}*/
 					if (colBase->getType() == ColumnBase::intType) {
 						Column<int>* t = (Column<int>*) colBase;
 						for (size_t rid = 0; rid < q_resultRid->size(); rid++) {
-							//size_t rid = i;
 							if (q_resultRid->at(rid)) {
 								size_t encodeValue = t->vecValueAt(rid);
 								int* a = t->getDictionary()->lookup(encodeValue);
@@ -393,7 +381,6 @@ int main(void) {
 					else {
 						Column<string>* t = (Column<string>*) colBase;
 						for (size_t rid = 0; rid < q_resultRid->size(); rid++) {
-							//size_t rid = i;
 							if (q_resultRid->at(rid)) {
 								size_t encodeValue = t->vecValueAt(rid);
 								string* a = t->getDictionary()->lookup(encodeValue);

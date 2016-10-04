@@ -24,22 +24,18 @@ class Column : public ColumnBase {
 private:
 	// value vector for column
 	vector<size_t>* vecValue;
-	// encoded value vector
-	vector<boost::dynamic_bitset<>>* encodedVecValue;
 	// bit packing array
 	PackedArray* packed;
 	// dictionary vector for column
 	Dictionary<T>* dictionary;
 public:
 	Column() {
-		encodedVecValue = new vector<boost::dynamic_bitset<>>();
 		dictionary = new Dictionary<T>();
 		vecValue = new vector<size_t>();
 		packed = new PackedArray();
 	}
 	virtual ~Column() {
 		delete vecValue;
-		delete encodedVecValue;
 		delete dictionary;
 		PackedArray_destroy(packed);
 	}
@@ -86,31 +82,6 @@ public:
 		vecValue->resize(0);
 	}
 
-	void updateVecValue(T& value) {
-		// used for column has few repeating values
-		vecValue->push_back(value);
-	}
-
-	void updateEncodedVecValue() {
-		// #bit to represent encode dictionary value
-		size_t numOfBit = (size_t) ceil(log2((double) dictionary->size()));
-		for (size_t i = 0; i < vecValue->size(); i++) {
-			encodedVecValue->push_back(boost::dynamic_bitset<>(numOfBit, vecValue->at(i)));
-		}
-		// free vecValue
-		vecValue->resize(0);
-	}
-
-	vector<boost::dynamic_bitset<>>* getEncodedVecValue() {
-		return encodedVecValue;
-	}
-
-	void printEncodedVecValue(int row) {
-		for (size_t i = 0; i < (*encodedVecValue).size() && i < row; i++) {
-			cout << "encodedVecValue[" << i << "] = " << ((*encodedVecValue)[i]).to_ulong() << "\n";
-		}
-	}
-
 	Dictionary<T>* getDictionary() {
 		if (dictionary == NULL) {
 			dictionary = new Dictionary<T>();
@@ -121,11 +92,6 @@ public:
 	// Update new value for dictionary
 	void updateDictionary(T& value, bool sorted = true) {
 		dictionary->addNewElement(value, vecValue, sorted);
-	}
-
-	void sortDictionary() {
-		vecValue->resize(0);
-		dictionary->sortDictionary(vecValue);
 	}
 
 };
