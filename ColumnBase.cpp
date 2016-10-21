@@ -45,4 +45,12 @@ void ColumnBase::setSize(int sizeValue) {
 	size = sizeValue;
 }
 
+bool ColumnBase::primaryKey() {
+	return isPrimaryKey;
+}
+
+void ColumnBase::setPrimaryKey(bool isPrimaryKey) {
+	this->isPrimaryKey = isPrimaryKey;
+}
+
 } /* namespace std */
