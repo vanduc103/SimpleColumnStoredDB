@@ -255,7 +255,6 @@ void Dictionary<string>::buildInvertedIndex() {
 		idxLevel0.word = word;
 		idxLevel0.location = location;
 		vecIndexLevel0->push_back(idxLevel0);
-		if (word == "gifts.") cout << "'gifts.' location size = " << location.size() << endl;
 	}
 	// sort vector of inverted index
 	std::sort(vecIndexLevel0->begin(), vecIndexLevel0->end());
