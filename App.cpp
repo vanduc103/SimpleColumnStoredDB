@@ -183,6 +183,7 @@ int main(void) {
 	infile.close();
 
 	// print distinct numbers
+	cout << endl;
 	for (ColumnBase* colBase : columns) {
 		if (colBase->getType() == ColumnBase::intType) {
 			Column<int>* col = (Column<int>*) colBase;
@@ -275,6 +276,7 @@ int main(void) {
 	infile.close();
 
 	// print distinct values
+	cout << endl;
 	cout << col0->getName() << " #distinct values = " << col0->getDictionary()->size()<<"/"<<row << endl;
 	cout << col1->getName() << " #distinct values = " << col1->getDictionary()->size()<<"/"<<row << endl;
 	cout << col2->getName() << " #distinct values = " << col2->getDictionary()->size()<<"/"<<row << endl;
@@ -319,8 +321,10 @@ int main(void) {
 				// execute where query
 				int value = 56789;
 				o_totalprice->selection(value, ColumnBase::ltOp, o_rowIds);
+				cout << "Orders rowIds count = " << Util::rowSelectedSize(o_rowIds) << endl;
 				value = 40;
 				l_quantity->selection(value, ColumnBase::gtOp, l_rowIds);
+				cout << "Lineitem rowIds count = " << Util::rowSelectedSize(l_rowIds) << endl;
 			}
 			// join example 3: orders.o_comment contains ‘gift’
 			else if (query.find("3") != string::npos) {
@@ -328,6 +332,7 @@ int main(void) {
 				// execute where query
 				string value = "gift";
 				o_comment->selection(value, ColumnBase::containOp, o_rowIds);
+				cout << "Orders rowIds count = " << Util::rowSelectedSize(o_rowIds) << endl;
 			}
 			// join example 1: no where selection
 			else {
@@ -363,6 +368,8 @@ int main(void) {
 
 				// probe (join) to find matching row ids
 				for (size_t rowId = 0; rowId < l_orderkey->vecValueSize(); rowId++) {
+					// by pass if row id not in previuos selection result
+					if (!l_rowIds->at(rowId)) continue;
 					size_t valueId1 = l_orderkey->vecValueAt(rowId);
 					// get valueId2 from mapping
 					size_t valueId2 = mappingValueId[valueId1];
@@ -399,6 +406,8 @@ int main(void) {
 
 				// probe (join) to find matching row ids
 				for (size_t rowId = 0; rowId < o_orderkey->vecValueSize(); rowId++) {
+					// by pass if row id not in previous selection result
+					if (!o_rowIds->at(rowId)) continue;
 					size_t valueId1 = o_orderkey->vecValueAt(rowId);
 					// get valueId2 from mapping
 					size_t valueId2 = mappingValueId[valueId1];

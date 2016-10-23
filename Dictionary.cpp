@@ -237,6 +237,8 @@ void Dictionary<string>::buildInvertedIndex() {
 		// add to map
 		for (size_t j = 0; j < words.size(); j++) {
 			string word = words[j];
+			// by pass if work length < 4
+			if (word.size() < 4) continue;
 			Porter2Stemmer::trim(word);	// normalize word
 			Porter2Stemmer::stem(word);	// stem by porter algorithm
 			vector<size_t> locationLevel0 = mapWordsLevel0[word];
