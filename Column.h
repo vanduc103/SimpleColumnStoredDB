@@ -177,6 +177,19 @@ public:
 		return outputs;
 	}
 
+	vector<T> projection(vector<int>* q_resultRid, size_t limit, size_t& limitCount) {
+		vector<T> outputs; // output result
+		limitCount = 0; // reset limit count
+		for (size_t i = 0; i < q_resultRid->size(); i++) {
+			size_t encodeValue = this->vecValueAt(q_resultRid->at(i));
+			T* a = this->getDictionary()->lookup(encodeValue);
+			outputs.push_back(*a);
+			if (++limitCount >= limit) break;
+		}
+
+		return outputs;
+	}
+
 	// Build hashmap of valueId based on selected row ids
 	void buildHashmap(map<size_t, vector<size_t>>& hashmap, vector<bool>* vecRowId) {
 		hashmap.clear();

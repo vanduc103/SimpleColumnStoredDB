@@ -116,7 +116,7 @@ int main(void) {
 		colBase->setName(name);
 		colBase->setType(type);
 		if (name == "o_orderkey") colBase->setPrimaryKey(true);
-		if (name == "o_comment") colBase->setCreateInvertedIndex(true);
+		//if (name == "o_comment") colBase->setCreateInvertedIndex(true);
 		columns.push_back(colBase);
 	}
 
@@ -344,6 +344,10 @@ int main(void) {
 					o_rowIds->at(i) = true;
 				}
 			}
+			// initialize join result row Ids
+			vector<int>* joinResult_l_rowIds = new vector<int>();
+			vector<int>* joinResult_o_rowIds = new vector<int>();
+			size_t join_totalresult = 0;
 
 			// process hash and probe
 			if (Util::rowSelectedSize(l_rowIds) >= Util::rowSelectedSize(o_rowIds)) {
@@ -377,10 +381,11 @@ int main(void) {
 					vector<size_t> rowIds = hashmap[valueId2];
 					if (rowIds.size() > 0) {
 						// keep row id
-						l_rowIds->at(rowId) = true;
+						joinResult_l_rowIds->push_back(rowId);
 						for (size_t o_rowId : rowIds) {
-							o_rowIds->at(o_rowId) = true;
+							joinResult_o_rowIds->push_back(o_rowId);
 						}
+						join_totalresult += rowIds.size();
 					}
 				}
 			}
@@ -415,9 +420,10 @@ int main(void) {
 					vector<size_t> rowIds = hashmap[valueId2];
 					if (rowIds.size() > 0) {
 						// keep row id
-						o_rowIds->at(rowId) = true;
+						joinResult_o_rowIds->push_back(rowId);
 						for (size_t l_rowId : rowIds)
-							l_rowIds->at(l_rowId) = true;
+							joinResult_l_rowIds->push_back(l_rowId);
+						join_totalresult += rowIds.size();
 					}
 				}
 			}
@@ -435,11 +441,6 @@ int main(void) {
 				cout << "   SELECT * from orders JOIN lineitem ON orders.o_orderkey = lineitem.l_orderkey WHERE " << endl
 					 << "   orders.o_comment contains ‘gift’" << endl;
 			}
-			size_t o_totalresult = 0;
-			for (size_t i = 0; i < o_rowIds->size(); i++) {
-				if (o_rowIds->at(i))
-					++o_totalresult;
-			}
 			size_t limit = 10;
 			size_t limitCount = 0;
 			vector<string> q_select_fields;
@@ -454,7 +455,7 @@ int main(void) {
 				if (colBase == NULL) continue;
 				if (colBase->getType() == ColumnBase::intType) {
 					Column<int>* t = (Column<int>*) colBase;
-					vector<int> tmpOut = t->projection(o_rowIds, limit, limitCount);
+					vector<int> tmpOut = t->projection(joinResult_o_rowIds, limit, limitCount);
 					for (size_t i = 0; i < tmpOut.size(); i++) {
 						outputs[i+1] += to_string(tmpOut[i]) + ",   ";
 						// padding whitespace
@@ -465,7 +466,7 @@ int main(void) {
 				}
 				else {
 					Column<string>* t = (Column<string>*) colBase;
-					vector<string> tmpOut = t->projection(o_rowIds, limit, limitCount);
+					vector<string> tmpOut = t->projection(joinResult_o_rowIds, limit, limitCount);
 					for (size_t i = 0; i < tmpOut.size(); i++) {
 						outputs[i+1] += "\"" + tmpOut[i] + "\"" + ",   ";
 					}
@@ -476,12 +477,18 @@ int main(void) {
 					cout << output << endl;
 			}
 			if (limitCount >= limit)
-				cout << "Showing "<<limit<<"/"<<o_totalresult<<" results !" << endl;
+				cout << "Showing "<<limit<<"/"<<join_totalresult<<" results !" << endl;
 			else if (limitCount == 0)
 				cout << "No result found !" << endl;
 			else
-				cout << "Showing "<<limitCount<<"/"<<o_totalresult<<" results !" << endl;
+				cout << "Showing "<<limitCount<<"/"<<join_totalresult<<" results !" << endl;
+
+			// delete temporary variables
 			delete o_rowIds;
+			delete l_rowIds;
+			delete joinResult_o_rowIds;
+			delete joinResult_l_rowIds;
+
 			std::cout << "Query time: " << float(clock() - begin_time)/CLOCKS_PER_SEC << " seconds " << endl;
 			continue;
 		}
