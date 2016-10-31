@@ -23,11 +23,15 @@ private:
 	string name;
 public:
 	virtual ~Table() {
-		//delete &m_columns;
+		delete m_columns;
 	}
 
 	Table(vector<ColumnBase*>& columns) {
 		m_columns = &columns;
+	}
+
+	vector<ColumnBase*>* columns() {
+		return m_columns;
 	}
 
 	string getName() {
@@ -35,6 +39,10 @@ public:
 	}
 	void setName(string tableName) {
 		name = tableName;
+	}
+
+	int numOfColumns() {
+		return (int) m_columns->size();
 	}
 
 	ColumnBase* getColumnByName(string colName) {
@@ -45,6 +53,31 @@ public:
 				return column;
 		}
 		return NULL;
+	}
+
+	// do some processes on all columns
+	void processColumn() {
+		for (ColumnBase* colBase : *m_columns) {
+			if (colBase->getType() == ColumnBase::intType) {
+				Column<int>* col = (Column<int>*) colBase;
+				if (col->isBulkInsert())
+					col->bulkBuildVecVector();
+				col->getDictionary()->clearTemp();
+				col->bitPackingVecValue();
+			}
+			else if (colBase->getType() == ColumnBase::charType ||
+					 colBase->getType() == ColumnBase::varcharType) {
+				Column<string>* col = (Column<string>*) colBase;
+				if (col->isBulkInsert()) {
+					col->bulkBuildVecVector();
+				}
+				if (col->isCreateInvertedIndex()) {
+					col->createInvertedIndex();
+				}
+				col->getDictionary()->clearTemp();
+				col->bitPackingVecValue();
+			}
+		}
 	}
 };
 

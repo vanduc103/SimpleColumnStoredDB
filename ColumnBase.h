@@ -15,11 +15,13 @@ namespace std {
 class ColumnBase {
 public:
 	enum COLUMN_TYPE {intType, charType, varcharType};
-	enum OP_TYPE {equalOp, neOp, ltOp, leOp, gtOp, geOp, likeOp};
+	enum OP_TYPE {equalOp, neOp, ltOp, leOp, gtOp, geOp, containOp};
 private:
 	string name;
 	COLUMN_TYPE type;
 	int size;
+	bool isPrimaryKey = false; // default is false
+	bool createInvertedIndex = false; // create inverted index for this column ?
 public:
 	ColumnBase();
 	virtual ~ColumnBase();
@@ -32,6 +34,12 @@ public:
 
 	int getSize();
 	void setSize(int sizeValue);
+
+	bool primaryKey();
+	void setPrimaryKey(bool isPrimaryKey);
+
+	bool isCreateInvertedIndex() {return createInvertedIndex; }
+	void setCreateInvertedIndex(bool createInvertedIndex) {this->createInvertedIndex = createInvertedIndex; }
 };
 
 } /* namespace std */
