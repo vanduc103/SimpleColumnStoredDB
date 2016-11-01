@@ -116,7 +116,7 @@ int main(void) {
 		colBase->setName(name);
 		colBase->setType(type);
 		if (name == "o_orderkey") colBase->setPrimaryKey(true);
-		//if (name == "o_comment") colBase->setCreateInvertedIndex(true);
+		if (name == "o_comment") colBase->setCreateInvertedIndex(true);
 		columns.push_back(colBase);
 	}
 
@@ -344,10 +344,8 @@ int main(void) {
 					o_rowIds->at(i) = true;
 				}
 			}
-			// initialize join result row Ids
-			vector<int>* joinResult_l_rowIds = new vector<int>();
-			vector<int>* joinResult_o_rowIds = new vector<int>();
-			size_t join_totalresult = 0;
+			// initialize join result pairs of row ids
+			vector<tuple<int, int>>* join_result_pairs = new vector<tuple<int, int>>();
 
 			// process hash and probe
 			if (Util::rowSelectedSize(l_rowIds) >= Util::rowSelectedSize(o_rowIds)) {
@@ -371,21 +369,19 @@ int main(void) {
 				o_orderkey->buildHashmap(hashmap, o_rowIds);
 
 				// probe (join) to find matching row ids
-				for (size_t rowId = 0; rowId < l_orderkey->vecValueSize(); rowId++) {
-					// by pass if row id not in previuos selection result
-					if (!l_rowIds->at(rowId)) continue;
-					size_t valueId1 = l_orderkey->vecValueAt(rowId);
+				for (size_t l_rowId = 0; l_rowId < l_orderkey->vecValueSize(); l_rowId++) {
+					// by pass if row id not in previous selection result
+					if (!l_rowIds->at(l_rowId)) continue;
+					size_t valueId1 = l_orderkey->vecValueAt(l_rowId);
 					// get valueId2 from mapping
 					size_t valueId2 = mappingValueId[valueId1];
 					// found on hashmap
 					vector<size_t> rowIds = hashmap[valueId2];
 					if (rowIds.size() > 0) {
-						// keep row id
-						joinResult_l_rowIds->push_back(rowId);
+						// make join result pairs
 						for (size_t o_rowId : rowIds) {
-							joinResult_o_rowIds->push_back(o_rowId);
+							join_result_pairs->push_back(make_tuple(l_rowId, o_rowId));
 						}
-						join_totalresult += rowIds.size();
 					}
 				}
 			}
@@ -410,20 +406,18 @@ int main(void) {
 				l_orderkey->buildHashmap(hashmap, l_rowIds);
 
 				// probe (join) to find matching row ids
-				for (size_t rowId = 0; rowId < o_orderkey->vecValueSize(); rowId++) {
+				for (size_t o_rowId = 0; o_rowId < o_orderkey->vecValueSize(); o_rowId++) {
 					// by pass if row id not in previous selection result
-					if (!o_rowIds->at(rowId)) continue;
-					size_t valueId1 = o_orderkey->vecValueAt(rowId);
+					if (!o_rowIds->at(o_rowId)) continue;
+					size_t valueId1 = o_orderkey->vecValueAt(o_rowId);
 					// get valueId2 from mapping
 					size_t valueId2 = mappingValueId[valueId1];
 					// found on hashmap
 					vector<size_t> rowIds = hashmap[valueId2];
 					if (rowIds.size() > 0) {
-						// keep row id
-						joinResult_o_rowIds->push_back(rowId);
+						// make join pair
 						for (size_t l_rowId : rowIds)
-							joinResult_l_rowIds->push_back(l_rowId);
-						join_totalresult += rowIds.size();
+							join_result_pairs->push_back(make_tuple(l_rowId, o_rowId));
 					}
 				}
 			}
@@ -441,13 +435,58 @@ int main(void) {
 				cout << "   SELECT * from orders JOIN lineitem ON orders.o_orderkey = lineitem.l_orderkey WHERE " << endl
 					 << "   orders.o_comment contains ‘gift’" << endl;
 			}
+			size_t join_totalresult = join_result_pairs->size();
 			size_t limit = 10;
 			size_t limitCount = 0;
+			// get orders table's row ids
+			vector<int>* joinResult_o_rowIds = new vector<int>();
+			for (size_t i = 0; i < join_result_pairs->size(); i++) {
+				// get from tuple
+				joinResult_o_rowIds->push_back(std::get<1>(join_result_pairs->at(i)));
+			}
+			// get lineitem table's row ids
+			vector<int>* joinResult_l_rowIds = new vector<int>();
+			for (size_t i = 0; i < join_result_pairs->size(); i++) {
+				// get from tuple
+				joinResult_l_rowIds->push_back(std::get<0>(join_result_pairs->at(i)));
+			}
+
+			vector<string> outputs (limit + 1);
 			vector<string> q_select_fields;
+			// lineitem's field name
+			q_select_fields.resize(0);
+			for (ColumnBase* colBase : (*table2->columns())) {
+				q_select_fields.push_back(colBase->getName());
+			}
+			for (size_t idx = 0; idx < q_select_fields.size(); idx++) {
+				string select_field_name = q_select_fields[idx];
+				outputs[0] += select_field_name + ", ";
+				ColumnBase* colBase = (ColumnBase*) table2->getColumnByName(select_field_name);
+				if (colBase == NULL) continue;
+				if (colBase->getType() == ColumnBase::intType) {
+					Column<int>* t = (Column<int>*) colBase;
+					vector<int> tmpOut = t->projection(joinResult_l_rowIds, limit, limitCount);
+					for (size_t i = 0; i < tmpOut.size(); i++) {
+						outputs[i+1] += to_string(tmpOut[i]) + ",   ";
+						// padding whitespace
+						for (int j = 11 - (outputs[i+1].length()); j > 0; j--) {
+							outputs[i+1] += " ";
+						}
+					}
+				}
+				else {
+					Column<string>* t = (Column<string>*) colBase;
+					vector<string> tmpOut = t->projection(joinResult_l_rowIds, limit, limitCount);
+					for (size_t i = 0; i < tmpOut.size(); i++) {
+						outputs[i+1] += "\"" + tmpOut[i] + "\"" + ",   ";
+					}
+				}
+			}
+			// orders's field name
+			q_select_fields.resize(0);
 			for (ColumnBase* colBase : (*table->columns())) {
 				q_select_fields.push_back(colBase->getName());
 			}
-			vector<string> outputs (limit + 1);
 			for (size_t idx = 0; idx < q_select_fields.size(); idx++) {
 				string select_field_name = q_select_fields[idx];
 				outputs[0] += select_field_name + ", ";
@@ -472,6 +511,7 @@ int main(void) {
 					}
 				}
 			}
+			// print output
 			for (string output : outputs) {
 				if (!output.empty())
 					cout << output << endl;
@@ -487,7 +527,7 @@ int main(void) {
 			delete o_rowIds;
 			delete l_rowIds;
 			delete joinResult_o_rowIds;
-			delete joinResult_l_rowIds;
+			delete join_result_pairs;
 
 			std::cout << "Query time: " << float(clock() - begin_time)/CLOCKS_PER_SEC << " seconds " << endl;
 			continue;
