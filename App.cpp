@@ -333,6 +333,10 @@ int main(void) {
 				string value = "gift";
 				o_comment->selection(value, ColumnBase::containOp, o_rowIds);
 				cout << "Orders rowIds count = " << Util::rowSelectedSize(o_rowIds) << endl;
+				// all rows of lineitem is selected
+				for (size_t i = 0; i < l_rowIds->size(); i++) {
+					l_rowIds->at(i) = true;
+				}
 			}
 			// join example 1: no where selection
 			else {
@@ -481,6 +485,9 @@ int main(void) {
 						outputs[i+1] += "\"" + tmpOut[i] + "\"" + ",   ";
 					}
 				}
+			}
+			for (int i = 1; i < outputs.size(); i++) {
+				outputs[i] += "                 ";
 			}
 			// orders's field name
 			q_select_fields.resize(0);
