@@ -92,7 +92,7 @@ int main(void) {
 		cout << "Create table statement is Invalid !" << endl;
 		return -1;
 	}
-	cout << "tablename: " << tableName << endl;
+	cout << "Table Name: " << tableName << endl;
 	// init table
 	vector<ColumnBase*> columns;
 	Table* table = new Table(columns);
@@ -214,7 +214,7 @@ int main(void) {
 	vector<ColumnBase*> columns2;
 	Table* table2 = new Table(columns2);
 	table2->setName("lineitem");
-	cout << "table name: " << table2->getName() << endl;
+	cout << "Table Name: " << table2->getName() << endl;
 
 	// Column 0
 	Column<int>* col0 = new Column<int>();
@@ -234,13 +234,6 @@ int main(void) {
 	col2->setType(ColumnBase::charType);
 	col2->setSize(1);
 
-	// read data into memory
-	/*filePath = "/home/duclv/homework/lineitem1M.tbl";
-	ifstream infile2(filePath);
-	if (!infile2) {
-		cout << "Cannot open file path: " << filePath << endl;
-		return -1;
-	}*/
 	cout << "Enter file path for lineitem table: ";
 	getline(cin, filePath);
 	ifstream infile2(filePath);
@@ -305,7 +298,7 @@ int main(void) {
 		if ("quit" == query)
 			break;
 
-		// Join example
+		// Join
 		if (query.find("join") != string::npos) {
 			begin_time = clock();
 			// join l_orderkey with o_orderkey
@@ -322,7 +315,7 @@ int main(void) {
 				o_rowIds->push_back(false);
 			}
 
-			// join example 2: orders.o_totalprice < 56789 AND l_quantity > 40
+			// join 2: orders.o_totalprice < 56789 AND l_quantity > 40
 			if (query.find("2") != string::npos) {
 				Column<int>* o_totalprice = (Column<int>*) table->getColumnByName("o_totalprice");
 				Column<int>* l_quantity = (Column<int>*) table2->getColumnByName("l_quantity");
@@ -334,7 +327,7 @@ int main(void) {
 				l_quantity->selection(value, ColumnBase::gtOp, l_rowIds);
 				//cout << "Lineitem rowIds count = " << Util::rowSelectedSize(l_rowIds) << endl;
 			}
-			// join example 3: orders.o_comment contains ‘gift’
+			// join 3: orders.o_comment contains ‘gift’
 			else if (query.find("3") != string::npos) {
 				Column<string>* o_comment = (Column<string>*) table->getColumnByName("o_comment");
 				// execute where query
@@ -356,13 +349,22 @@ int main(void) {
 					o_rowIds->at(i) = true;
 				}
 			}
+			cout << "to selection time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 			// initialize join result pairs of row ids
 			vector<tuple<int, int>>* join_result_pairs = new vector<tuple<int, int>>();
+
+			/*struct hashing_func {
+			    unsigned long operator()(const size_t& key) const {
+			        unsigned long hash = 0;
+			        hash = key % 9000000;
+			        return hash;
+			    }
+			};*/
 
 			// process hash and probe
 			if (Util::rowSelectedSize(l_rowIds) >= Util::rowSelectedSize(o_rowIds)) {
 				// create mapping between vecValue of 2 join columns
-				map<size_t, size_t> mappingValueId;
+				std::unordered_map<size_t, size_t> mappingValueId;
 				for (size_t i = 0; i < l_orderkey->getDictionary()->size(); i++) {
 					size_t valueId1 = i;
 					int* dictValue1 = l_orderkey->getDictionary()->lookup(valueId1);
@@ -375,13 +377,16 @@ int main(void) {
 						mappingValueId[valueId1] = valueId2;
 					}
 				}
+				cout << "to mapping time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 
 				// build hashmap for smaller column
-				map<size_t, vector<size_t>> hashmap;
+				std::unordered_map<size_t, vector<size_t>> hashmap;
 				o_orderkey->buildHashmap(hashmap, o_rowIds);
+				cout << "to build hashmap time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 
 				// probe (join) to find matching row ids
-				for (size_t l_rowId = 0; l_rowId < l_orderkey->vecValueSize(); l_rowId++) {
+				size_t l_orderkey_size = l_orderkey->vecValueSize();
+				for (size_t l_rowId = 0; l_rowId < l_orderkey_size; l_rowId++) {
 					// by pass if row id not in previous selection result
 					if (!l_rowIds->at(l_rowId)) continue;
 					size_t valueId1 = l_orderkey->vecValueAt(l_rowId);
@@ -396,10 +401,11 @@ int main(void) {
 						}
 					}
 				}
+				cout << "to join time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 			}
 			else {
 				// create mapping between vecValue of 2 join columns
-				map<size_t, size_t> mappingValueId;
+				unordered_map<size_t, size_t> mappingValueId;
 				for (size_t i = 0; i < o_orderkey->getDictionary()->size(); i++) {
 					size_t valueId1 = i;
 					int* dictValue1 = o_orderkey->getDictionary()->lookup(valueId1);
@@ -412,13 +418,16 @@ int main(void) {
 						mappingValueId[valueId1] = valueId2;
 					}
 				}
+				cout << "to mapping time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 
 				// build hashmap for smaller column
-				map<size_t, vector<size_t>> hashmap;
+				unordered_map<size_t, vector<size_t>> hashmap;
 				l_orderkey->buildHashmap(hashmap, l_rowIds);
+				cout << "to build hashmap time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 
 				// probe (join) to find matching row ids
-				for (size_t o_rowId = 0; o_rowId < o_orderkey->vecValueSize(); o_rowId++) {
+				size_t o_orderkey_size = o_orderkey->vecValueSize();
+				for (size_t o_rowId = 0; o_rowId < o_orderkey_size; o_rowId++) {
 					// by pass if row id not in previous selection result
 					if (!o_rowIds->at(o_rowId)) continue;
 					size_t valueId1 = o_orderkey->vecValueAt(o_rowId);
@@ -432,6 +441,7 @@ int main(void) {
 							join_result_pairs->push_back(make_tuple(l_rowId, o_rowId));
 					}
 				}
+				cout << "to join time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 			}
 
 			// print the result based on matching row ids

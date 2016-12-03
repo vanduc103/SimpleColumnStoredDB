@@ -13,7 +13,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <stdexcept>
 #include <algorithm>
 #include "ColumnBase.h"
@@ -193,7 +193,7 @@ public:
 	}
 
 	// Build hashmap of valueId based on selected row ids
-	void buildHashmap(map<size_t, vector<size_t>>& hashmap, vector<bool>* vecRowId) {
+	void buildHashmap(std::unordered_map<size_t, vector<size_t>>& hashmap, vector<bool>* vecRowId) {
 		hashmap.clear();
 		for (size_t rowId = 0; rowId < vecRowId->size(); rowId++) {
 			// get valueId from bit packing if row id is selected
@@ -206,7 +206,7 @@ public:
 	}
 
 	// Return vector of matching row ids
-	vector<size_t> probe(map<size_t, vector<size_t>>* hashmap, size_t probedValue) {
+	vector<size_t> probe(std::unordered_map<size_t, vector<size_t>>* hashmap, size_t probedValue) {
 		if (hashmap != NULL) {
 			try {
 				return hashmap->at(probedValue);
