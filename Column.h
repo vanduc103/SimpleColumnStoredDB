@@ -100,10 +100,7 @@ public:
 
 	// Update new value for dictionary
 	void updateDictionary(T& value, bool sorted = true, bool bulkInsert = true) {
-		// no bulk insert if no sort
-		if (!sorted) bulkInsert = false;
 		this->bulkInsert = bulkInsert;
-
 		dictionary->addNewElement(value, vecValue, sorted, bulkInsert);
 	}
 
@@ -111,9 +108,13 @@ public:
 		return bulkInsert;
 	}
 
+	// bulk insert -> update vecValue after building entire dictionary
 	void bulkBuildVecVector() {
-		// bulk insert -> update vecValue after building entire dictionary
 		vecValue->resize(0);
+		// sort dictionary
+		dictionary->sort();
+		dictionary->setIsSorted(true);
+		// get bulkVecValue vector
 		vector<T>* bulkVecValue = dictionary->getBulkVecValue();
 		if (bulkVecValue != NULL) {
 			for (size_t i = 0; i < bulkVecValue->size(); i++) {
@@ -128,6 +129,7 @@ public:
 	}
 
 	void createInvertedIndex() {
+		cout << "Creating inverted index for column: " << this->getName() << endl;
 		if (dictionary != NULL)
 			dictionary->buildInvertedIndex();
 	}

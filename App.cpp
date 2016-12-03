@@ -115,7 +115,6 @@ int main(void) {
 		}
 		colBase->setName(name);
 		colBase->setType(type);
-		if (name == "o_orderkey") colBase->setPrimaryKey(true);
 		if (name == "o_comment") colBase->setCreateInvertedIndex(true);
 		columns.push_back(colBase);
 	}
@@ -163,18 +162,20 @@ int main(void) {
 			ColumnBase* colBase = columns[i];
 			if (colBase->getType() == ColumnBase::intType) {
 				int intValue = stoi(item);
-				bool sorted = true;
+				bool sorted = false;
+				bool bulkInsert = true;
 				// update dictionary
 				Column<int>* col = (Column<int>*) colBase;
-				col->updateDictionary(intValue, sorted);
+				col->updateDictionary(intValue, sorted, bulkInsert);
 			}
 			else {
 				// char or varchar type
 				boost::replace_all(item, "\"", "");
 				bool sorted = false;
+				bool bulkInsert = false;
 				// update dictionary
 				Column<string>* col = (Column<string>*) colBase;
-				col->updateDictionary(item, sorted);
+				col->updateDictionary(item, sorted, bulkInsert);
 			}
 		}
 		++row;
@@ -201,9 +202,13 @@ int main(void) {
 	// loaded time
 	std::cout << "Table Load time: " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << " seconds " << endl;
 
+	// print test
+	//((Column<string>*)columns[1])->getDictionary()->print(10);
+
 	/*
 	 * Load table 2: lineitem
 	 */
+	cout << "***********************************************" << endl;
 	begin_time = clock();
 	// init table 2
 	vector<ColumnBase*> columns2;
@@ -258,18 +263,21 @@ int main(void) {
 			// orderkey is 1st column
 			if (i == 1) {
 				int orderkey = stoi(token);
-				col0->updateDictionary(orderkey, true);
+				bool sorted = false, bulkInsert = true;
+				col0->updateDictionary(orderkey, sorted, bulkInsert);
 			}
 			// quantity is 2nd column
 			else if (i == 2) {
 				int quantity = stoi(token);
-				col1->updateDictionary(quantity, true);
+				bool sorted = false, bulkInsert = true;
+				col1->updateDictionary(quantity, sorted, bulkInsert);
 			}
 		}
 		// get the last token
 		token = line.substr(last);
 		boost::replace_all(token, "\"", "");
-		col2->updateDictionary(token, false);
+		bool sorted = false, bulkInsert = false;
+		col2->updateDictionary(token, sorted, bulkInsert);
 		++row;
 		Util::printLoading(row);
 	}
@@ -321,10 +329,10 @@ int main(void) {
 				// execute where query
 				int value = 56789;
 				o_totalprice->selection(value, ColumnBase::ltOp, o_rowIds);
-				cout << "Orders rowIds count = " << Util::rowSelectedSize(o_rowIds) << endl;
+				//cout << "Orders rowIds count = " << Util::rowSelectedSize(o_rowIds) << endl;
 				value = 40;
 				l_quantity->selection(value, ColumnBase::gtOp, l_rowIds);
-				cout << "Lineitem rowIds count = " << Util::rowSelectedSize(l_rowIds) << endl;
+				//cout << "Lineitem rowIds count = " << Util::rowSelectedSize(l_rowIds) << endl;
 			}
 			// join example 3: orders.o_comment contains ‘gift’
 			else if (query.find("3") != string::npos) {
@@ -332,7 +340,7 @@ int main(void) {
 				// execute where query
 				string value = "gift";
 				o_comment->selection(value, ColumnBase::containOp, o_rowIds);
-				cout << "Orders rowIds count = " << Util::rowSelectedSize(o_rowIds) << endl;
+				//cout << "Orders rowIds count = " << Util::rowSelectedSize(o_rowIds) << endl;
 				// all rows of lineitem is selected
 				for (size_t i = 0; i < l_rowIds->size(); i++) {
 					l_rowIds->at(i) = true;
@@ -433,7 +441,7 @@ int main(void) {
 			}
 			else if (query == "join2") {
 				cout << "   SELECT * from orders JOIN lineitem ON orders.o_orderkey = lineitem.l_orderkey WHERE " << endl
-					 << "   orders.o_totalprice < 56789 AND l_quantity > 40" << endl;
+					 << "   l_quantity > 40 AND o_totalprice < 56789" << endl;
 			}
 			else if (query == "join3") {
 				cout << "   SELECT * from orders JOIN lineitem ON orders.o_orderkey = lineitem.l_orderkey WHERE " << endl
@@ -486,7 +494,7 @@ int main(void) {
 					}
 				}
 			}
-			for (int i = 1; i < outputs.size(); i++) {
+			for (size_t i = 1; i < outputs.size(); i++) {
 				outputs[i] += "                 ";
 			}
 			// orders's field name
@@ -547,7 +555,7 @@ int main(void) {
 		// check whether the parsing was successfull
 		bool queryValid = pResult->isValid;
 		while (queryValid) {
-			printf("Parsed successfully!\n");
+			//printf("Parsed successfully!\n");
 			// process the statements...
 			string q_table;
 			vector<string> q_select_fields;
@@ -559,7 +567,7 @@ int main(void) {
 			if (stmt->type() == hsql::StatementType::kStmtSelect) {
 				hsql::SelectStatement* select = (hsql::SelectStatement*) stmt;
 				q_table = select->fromTable->getName();
-				cout << "Table name: " << q_table << endl;
+				//cout << "Table name: " << q_table << endl;
 				if (q_table != table->getName()) {queryValid = false; break;}
 
 				for (hsql::Expr* expr : *select->selectList) {
@@ -574,7 +582,7 @@ int main(void) {
 						q_select_fields.push_back(string(expr->name) + string("#") + string(expr->expr->name));
 				}
 				for (size_t i = 0; i < q_select_fields.size(); i++) {
-					cout << "select fields[" << i << "] = " << q_select_fields[i] << endl;
+					//cout << "select fields[" << i << "] = " << q_select_fields[i] << endl;
 				}
 
 				if (select->whereClause != NULL) {
@@ -647,7 +655,7 @@ int main(void) {
 							break;
 						}
 					}
-					for (size_t i = 0; i < q_where_fields.size(); i++) {
+					/*for (size_t i = 0; i < q_where_fields.size(); i++) {
 						cout << "where fields[" << i << "] = " << q_where_fields[i] << endl;
 					}
 					for (size_t i = 0; i < q_where_ops.size(); i++) {
@@ -655,7 +663,7 @@ int main(void) {
 					}
 					for (size_t i = 0; i < q_where_values.size(); i++) {
 						cout << "value values[" << i << "] = " << q_where_values[i] << endl;
-					}
+					}*/
 				}
 				/*
 				 * execute query

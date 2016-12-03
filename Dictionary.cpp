@@ -44,6 +44,15 @@ void strTolower(int& value) {
 	// do nothing
 }
 
+template<class T>
+void Dictionary<T>::setIsSorted(bool sorted) {
+	this->isSorted = sorted;
+}
+
+template<class T>
+bool Dictionary<T>::getIsSorted() {
+	return this->isSorted;
+}
 
 template<class T>
 T* Dictionary<T>::lookup(size_t index) {
@@ -59,7 +68,7 @@ void Dictionary<T>::search(T& value, ColumnBase::OP_TYPE opType, vector<size_t>&
 	if (items->empty()) {
 		// return -1 to show no result
 		result.push_back(-1);
-	} else {
+	} else if(isSorted) {
 		// find the lower bound for value in vector
 		typename vector<T>::iterator lower;
 		lower = std::lower_bound(items->begin(), items->end(), value,
@@ -141,31 +150,91 @@ void Dictionary<T>::search(T& value, ColumnBase::OP_TYPE opType, vector<size_t>&
 			break;
 		}
 		case ColumnBase::containOp: {
-			// search by inverted index
-			struct invertedIndex idxContain;
-			strTolower(value);	// lower to compare with index
-			Porter2Stemmer::stem(value); // stem to compare with index
-			idxContain.word = value;
-			typename vector<invertedIndex>::iterator lowerIdx;
-			lowerIdx = std::lower_bound(vecIndexLevel0->begin(), vecIndexLevel0->end(), idxContain);
-			// found
-			if (lowerIdx != vecIndexLevel0->end() && *lowerIdx == idxContain) {
-				invertedIndex idx = vecIndexLevel0->at(lowerIdx - vecIndexLevel0->begin());
-				result.insert(result.end(), idx.location.begin(), idx.location.end());
-				// sort result
-				std::sort(result.begin(), result.end());
-			}
 			break;
 		}
+		}
+	}
+	else {
+		// Search with no sorted dictionary => scan through all items
+		for (size_t i = 0; i < items->size(); i++) {
+			T dictionaryValue = items->at(i);
+			// based on operator to find exact position in dictionary
+			switch (opType) {
+			case ColumnBase::equalOp: {
+				// equal
+				if (equalFunc(dictionaryValue, value)) {
+					result.push_back(i);
+					// return immediately because dictionary has no duplicate
+					return;
+				}
+				break;
+			}
+			case ColumnBase::neOp: {
+				// not equal
+				if (!equalFunc(value, dictionaryValue)) {
+					result.push_back(i);
+				}
+				break;
+			}
+			case ColumnBase::ltOp: {
+				// less than
+				if (compFunc(dictionaryValue, value)){
+					result.push_back(i);
+				}
+				break;
+			}
+			case ColumnBase::leOp: {
+				// less than or equal = not greater than
+				if (!compFunc(value, dictionaryValue)) {
+					result.push_back(i);
+				}
+				break;
+			}
+			case ColumnBase::gtOp: {
+				// greater than
+				if (compFunc(value, dictionaryValue)){
+					result.push_back(i);
+				}
+				break;
+			}
+			case ColumnBase::geOp: {
+				// greater than or equal = not less than
+				if (!compFunc(dictionaryValue, value)) {
+					result.push_back(i);
+				}
+				break;
+			}
+			case ColumnBase::containOp: {
+				break;
+			}
+			}
+		}
+	}
+	if (opType == ColumnBase::containOp) {
+		// search by inverted index
+		struct invertedIndex idxContain;
+		strTolower(value);	// lower to compare with index
+		Porter2Stemmer::stem(value); // stem to compare with index
+		idxContain.word = value;
+		typename vector<invertedIndex>::iterator lowerIdx;
+		lowerIdx = std::lower_bound(vecIndexLevel0->begin(), vecIndexLevel0->end(), idxContain);
+		// found
+		if (lowerIdx != vecIndexLevel0->end() && *lowerIdx == idxContain) {
+			invertedIndex idx = vecIndexLevel0->at(lowerIdx - vecIndexLevel0->begin());
+			result.insert(result.end(), idx.location.begin(), idx.location.end());
+			// sort result
+			std::sort(result.begin(), result.end());
 		}
 	}
 }
 
 template<class T>
 size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue, bool sorted, bool bulkInsert) {
+	// bulk insert
+	if (bulkInsert) bulkVecValue->push_back(value);
+
 	if (items->empty()) {
 		items->push_back(value);
-		if (bulkInsert) bulkVecValue->push_back(value);
 		vecValue->push_back(0);
 		(*sMap)[value] = 1;
 		return 0;
@@ -185,8 +254,6 @@ size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue, bool sor
 		typename vector<T>::iterator lower;
 		lower = std::lower_bound(items->begin(), items->end(), value,
 				compFunc<T>);
-		// bulk insert
-		if (bulkInsert) bulkVecValue->push_back(value);
 
 		// value existed
 		if (lower != items->end() && equalFunc(value, *lower)) {
@@ -223,6 +290,11 @@ size_t Dictionary<T>::addNewElement(T& value, vector<size_t>* vecValue, bool sor
 	}
 }
 
+template<class T>
+void Dictionary<T>::sort() {
+	std::sort(items->begin(), items->end(), compFunc<T>);
+}
+
 template<>
 void Dictionary<string>::buildInvertedIndex() {
 	// make an unordered_map of words from all items
@@ -239,6 +311,8 @@ void Dictionary<string>::buildInvertedIndex() {
 			string word = words[j];
 			// by pass if work length < 4
 			if (word.size() < 4) continue;
+			// just create inverted index for 'gift'
+			if (word.find("gift") == string::npos) continue;
 			Porter2Stemmer::trim(word);	// normalize word
 			Porter2Stemmer::stem(word);	// stem by porter algorithm
 			vector<size_t> locationLevel0 = mapWordsLevel0[word];
