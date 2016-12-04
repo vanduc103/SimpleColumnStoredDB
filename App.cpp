@@ -500,7 +500,10 @@ int main(void) {
 					Column<string>* t = (Column<string>*) colBase;
 					vector<string> tmpOut = t->projection(joinResult_l_rowIds, limit, limitCount);
 					for (size_t i = 0; i < tmpOut.size(); i++) {
-						outputs[i+1] += "\"" + tmpOut[i] + "\"" + ",   ";
+						string tmp = tmpOut[i];
+						if (tmp.length() > 50)
+							tmp = tmp.substr(0, 50) + "...";
+						outputs[i+1] += "\"" + tmp + "\"" + ",   ";
 					}
 				}
 			}
@@ -532,7 +535,10 @@ int main(void) {
 					Column<string>* t = (Column<string>*) colBase;
 					vector<string> tmpOut = t->projection(joinResult_o_rowIds, limit, limitCount);
 					for (size_t i = 0; i < tmpOut.size(); i++) {
-						outputs[i+1] += "\"" + tmpOut[i] + "\"" + ",   ";
+						string tmp = tmpOut[i];
+						if (tmp.length() > 50)
+							tmp = tmp.substr(0, 50) + "...";
+						outputs[i+1] += "\"" + tmp + "\"" + ",   ";
 					}
 				}
 			}
@@ -751,7 +757,10 @@ int main(void) {
 						// get result
 						vector<string> tmpOut = t->projection(q_resultRid, limit, limitCount);
 						for (size_t i = 0; i < tmpOut.size(); i++) {
-							outputs[i+1] += "\"" + tmpOut[i] + "\"" + ",   ";
+							string tmp = tmpOut[i];
+							if (tmp.length() > 50)
+								tmp = tmp.substr(0, 50) + "...";
+							outputs[i+1] += "\"" + tmp + "\"" + ",   ";
 						}
 					}
 				}
