@@ -17,7 +17,7 @@ How to build and run
 - Build: 
   $ make clean
   $ make
-- Run:
+- Run (maybe use run file contained):
   + Notice to install libsqlparser.so and added /usr/local/lib to $LD_LIBRARY_PATH
   $ ./App
 

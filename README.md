@@ -1,5 +1,13 @@
 # SimpleColumnStoredDB
 A simple column-store data processing.
+- Homework2: Execute some queries
+  + select * from orders where o_totalprice > 56789
+  + select * from orders where o_totalprice > 5678 and o_totalprice < 56789
+- Homework3: Execute join
+  + select * from orders join lineitem where orders.o_orderkey = lineitem.l_orderkey
+  + select * from orders join lineitem where orders.o_orderkey = lineitem.l_orderkey and orders.o_totalprice < 56789 AND l_quantity > 40
+  + select * from orders join lineitem where orders.o_orderkey = lineitem.l_orderkey and orders.o_comment contains 'gift'
+
 --------------------
 How to build and run
 --------------------
